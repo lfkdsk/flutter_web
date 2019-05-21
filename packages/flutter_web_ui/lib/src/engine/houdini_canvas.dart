@@ -163,7 +163,7 @@ class HoudiniCanvas extends EngineCanvas with SaveElementStackTracking {
   void drawRect(ui.Rect rect, ui.PaintData paint) {
     // Drawn using CSS Paint.
   }
-
+  
   @override
   void drawRRect(ui.RRect rrect, ui.PaintData paint) {
     // Drawn using CSS Paint.

@@ -14,25 +14,39 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:html' as html;
 import 'dart:js_util' as js_util;
-
+import 'package:vector_math/vector_math_64.dart';
 import 'src/engine.dart' as engine;
 
 import 'package:meta/meta.dart';
 
 part 'src/ui/canvas.dart';
+
 part 'src/ui/compositing.dart';
+
 part 'src/ui/debug_canvas_reuse_overlay.dart';
+
 part 'src/ui/geometry.dart';
+
 part 'src/ui/hash_codes.dart';
+
 part 'src/ui/initialization.dart';
+
 part 'src/ui/lerp.dart';
+
 part 'src/ui/natives.dart';
+
 part 'src/ui/painting.dart';
+
 part 'src/ui/pointer.dart';
+
 part 'src/ui/semantics.dart';
+
 part 'src/ui/browser_location.dart';
+
 part 'src/ui/text.dart';
+
 part 'src/ui/tile_mode.dart';
+
 part 'src/ui/window.dart';
 
 /// Provides a compile time constant to customize flutter framework and other

@@ -860,9 +860,66 @@ class Canvas {
     if (colors.isNotEmpty && colors.length != rectCount)
       throw new ArgumentError(
           'If non-null, "colors" length must match that of "transforms" and "rects".');
+    final src = Rect.fromLTWH(
+        0, 0, atlas.width.toDouble(), atlas.height.toDouble());
 
-    // TODO(het): Do we need to support this?
-    throw new UnimplementedError();
+    for (int i = 0; i < rectCount; ++i) {
+      RSTransform transform = transforms[i];
+      Rect rect = rects[i];
+      Color color = colors[i];
+
+      // Paint itemPaint = new Paint();
+      // paint.colorFilter = ColorFilter.mode(color, blendMode);
+
+      this.save();
+
+//      fMat[kMScaleX]  = xform.fSCos;
+//      fMat[kMSkewX]   = -xform.fSSin;
+//      fMat[kMTransX]  = xform.fTx;
+//
+//      fMat[kMSkewY]   = xform.fSSin;
+//      fMat[kMScaleY]  = xform.fSCos;
+//      fMat[kMTransY]  = xform.fTy;
+//
+//      fMat[kMPersp0] = fMat[kMPersp1] = 0;
+//      fMat[kMPersp2] = 1;
+/*      [scale-x    skew-x      trans-x]   [X]   [X']
+        [skew-y     scale-y     trans-y] * [Y] = [Y']
+        [persp-0    persp-1     persp-2]   [1]   [1 ]
+        a c 0 e
+        b d 0 f
+        0 0 1 0
+        0 0 0 1
+
+        a c e
+        b d f
+        0 0 1
+        https://sourcegraph.com/github.com/google/skia@f4c66ccafcb7fe62201cbe9a6eb72b09ef8a31da/-/blob/src/core/SkDraw.cpp#L883:14
+        https://sourcegraph.com/github.com/google/skia@f4c66cc/-/blob/src/core/SkMatrix.cpp#L217
+*/
+
+      paint.blendMode = blendMode;
+      paint.color = color;
+
+      Matrix4 matrix3 = Matrix4.identity()
+        ..setColumns(
+          Vector4(transform.scos, transform.ssin, 0, 0),
+          Vector4(-transform.ssin, transform.scos, 0, 0),
+          Vector4(0, 0, 1, 0),
+          Vector4(transform.tx, transform.ty, 0, 1),
+        );
+
+      this.transform(matrix3.storage);
+
+      this.drawImageRect(
+        atlas,
+        src,
+        rect,
+        paint,
+      );
+
+      this.restore();
+    }
   }
 
   //
@@ -910,8 +967,8 @@ class Canvas {
   /// is not opaque.
   ///
   /// The arguments must not be null.
-  void drawShadow(
-      Path path, Color color, double elevation, bool transparentOccluder) {
+  void drawShadow(Path path, Color color, double elevation,
+      bool transparentOccluder) {
     assert(path != null); // path is checked on the engine side
     assert(color != null);
     assert(transparentOccluder != null);
@@ -1161,8 +1218,8 @@ class Path {
   /// Adds a cubic bezier segment that curves from the current point
   /// to the given point (x3,y3), using the control points (x1,y1) and
   /// (x2,y2).
-  void cubicTo(
-      double x1, double y1, double x2, double y2, double x3, double y3) {
+  void cubicTo(double x1, double y1, double x2, double y2, double x3,
+      double y3) {
     _ensurePathStarted();
     _commands.add(new engine.BezierCurveTo(x1, y1, x2, y2, x3, y3));
     _setCurrentPoint(x3, y3);
@@ -1172,8 +1229,8 @@ class Path {
   /// to the point at the offset (x3,y3) from the current point, using
   /// the control points at the offsets (x1,y1) and (x2,y2) from the
   /// current point.
-  void relativeCubicTo(
-      double x1, double y1, double x2, double y2, double x3, double y3) {
+  void relativeCubicTo(double x1, double y1, double x2, double y2, double x3,
+      double y3) {
     _ensurePathStarted();
     _commands.add(new engine.BezierCurveTo(x1 + _currentX, y1 + _currentY,
         x2 + _currentX, y2 + _currentY, x3 + _currentX, y3 + _currentY));
@@ -1187,7 +1244,14 @@ class Path {
   /// less than 1, it is an ellipse.
   void conicTo(double x1, double y1, double x2, double y2, double w) {
     List<Offset> quads =
-        engine.Conic(_currentX, _currentY, x1, y1, x2, y2, w).toQuads();
+    engine.Conic(
+        _currentX,
+        _currentY,
+        x1,
+        y1,
+        x2,
+        y2,
+        w).toQuads();
     for (int i = 1, len = quads.length; i < len; i += 2) {
       quadraticBezierTo(
           quads[i].dx, quads[i].dy, quads[i + 1].dx, quads[i + 1].dy);
@@ -1220,8 +1284,8 @@ class Path {
   ///
   /// The line segment added if `forceMoveTo` is false starts at the
   /// current point and ends at the start of the arc.
-  void arcTo(
-      Rect rect, double startAngle, double sweepAngle, bool forceMoveTo) {
+  void arcTo(Rect rect, double startAngle, double sweepAngle,
+      bool forceMoveTo) {
     assert(engine.rectIsValid(rect));
     var center = rect.center;
     var radiusX = rect.width / 2;
@@ -1233,8 +1297,15 @@ class Path {
     } else {
       lineTo(startX, startY);
     }
-    _commands.add(new engine.Ellipse(center.dx, center.dy, radiusX, radiusY,
-        0.0, startAngle, startAngle + sweepAngle, sweepAngle.isNegative));
+    _commands.add(new engine.Ellipse(
+        center.dx,
+        center.dy,
+        radiusX,
+        radiusY,
+        0.0,
+        startAngle,
+        startAngle + sweepAngle,
+        sweepAngle.isNegative));
 
     _setCurrentPoint(radiusX * math.cos(startAngle + sweepAngle) + center.dx,
         radiusY * math.sin(startAngle + sweepAngle) + center.dy);
@@ -1255,8 +1326,7 @@ class Path {
   /// See Conversion from endpoint to center parametrization described in
   /// https://www.w3.org/TR/SVG/implnote.html#ArcConversionEndpointToCenter
   /// as reference for implementation.
-  void arcToPoint(
-    Offset arcEnd, {
+  void arcToPoint(Offset arcEnd, {
     Radius radius = Radius.zero,
     double rotation = 0.0,
     bool largeArc = false,
@@ -1358,8 +1428,15 @@ class Path {
       sweepAngle -= math.pi * 2.0;
     }
 
-    _commands.add(new engine.Ellipse(cx, cy, rx, ry, xAxisRotation, startAngle,
-        startAngle + sweepAngle, sweepAngle.isNegative));
+    _commands.add(new engine.Ellipse(
+        cx,
+        cy,
+        rx,
+        ry,
+        xAxisRotation,
+        startAngle,
+        startAngle + sweepAngle,
+        sweepAngle.isNegative));
 
     _setCurrentPoint(arcEnd.dx, arcEnd.dy);
   }
@@ -1378,8 +1455,7 @@ class Path {
   /// `arcEndDelta.dx` and `arcEndDelta.dy` are zero. The radii are scaled to
   /// fit the last path point if both are greater than zero but too small to
   /// describe an arc.
-  void relativeArcToPoint(
-    Offset arcEndDelta, {
+  void relativeArcToPoint(Offset arcEndDelta, {
     Radius radius = Radius.zero,
     double rotation = 0.0,
     bool largeArc = false,
@@ -1419,7 +1495,14 @@ class Path {
     /// At startAngle = 0, the path will begin at center + cos(0) * radius.
     _openNewSubpath(center.dx + radiusX, center.dy);
     _commands.add(new engine.Ellipse(
-        center.dx, center.dy, radiusX, radiusY, 0.0, 0.0, 2 * math.pi, false));
+        center.dx,
+        center.dy,
+        radiusX,
+        radiusY,
+        0.0,
+        0.0,
+        2 * math.pi,
+        false));
   }
 
   /// Adds a new subpath with one arc segment that consists of the arc
@@ -1437,8 +1520,15 @@ class Path {
     var radiusY = oval.height / 2;
     _openNewSubpath(radiusX * math.cos(startAngle) + center.dx,
         radiusY * math.sin(startAngle) + center.dy);
-    _commands.add(new engine.Ellipse(center.dx, center.dy, radiusX, radiusY,
-        0.0, startAngle, startAngle + sweepAngle, sweepAngle.isNegative));
+    _commands.add(new engine.Ellipse(
+        center.dx,
+        center.dy,
+        radiusX,
+        radiusY,
+        0.0,
+        startAngle,
+        startAngle + sweepAngle,
+        sweepAngle.isNegative));
 
     _setCurrentPoint(radiusX * math.cos(startAngle + sweepAngle) + center.dx,
         radiusY * math.sin(startAngle + sweepAngle) + center.dy);
@@ -1539,8 +1629,8 @@ class Path {
     }
   }
 
-  void _extendWithPathAndMatrix(
-      Path path, double dx, double dy, Float64List matrix) {
+  void _extendWithPathAndMatrix(Path path, double dx, double dy,
+      Float64List matrix) {
     throw new UnimplementedError('Cannot extend path with transform matrix');
   }
 
@@ -1640,7 +1730,8 @@ class Path {
     _rawRecorder.translate(-engine.BitmapCanvas.paddingPixels.toDouble(),
         -engine.BitmapCanvas.paddingPixels.toDouble());
     _rawRecorder.drawPath(
-        this, (new Paint()..color = Color(0xFF000000)).webOnlyPaintData);
+        this, (new Paint()
+      ..color = Color(0xFF000000)).webOnlyPaintData);
     bool result = _rawRecorder.ctx.isPointInPath(pointX, pointY);
     _rawRecorder.dispose();
     return result;
@@ -1683,10 +1774,16 @@ class Path {
     // Sufficiently small number for curve eq.
     const epsilon = 0.000000001;
     bool ltrbInitialized = false;
-    double left = 0.0, top = 0.0, right = 0.0, bottom = 0.0;
+    double left = 0.0,
+        top = 0.0,
+        right = 0.0,
+        bottom = 0.0;
     double curX = 0.0;
     double curY = 0.0;
-    double minX = 0.0, maxX = 0.0, minY = 0.0, maxY = 0.0;
+    double minX = 0.0,
+        maxX = 0.0,
+        minY = 0.0,
+        maxY = 0.0;
     for (engine.Subpath subpath in subpaths) {
       for (engine.PathCommand op in subpath.commands) {
         bool skipBounds = false;
@@ -2104,7 +2201,7 @@ class Path {
 class PathMetrics extends IterableBase<PathMetric> {
   PathMetrics._(Path path, bool forceClosed)
       : _iterator =
-            new PathMetricIterator._(new PathMetric._(path, forceClosed));
+  new PathMetricIterator._(new PathMetric._(path, forceClosed));
 
   final Iterator<PathMetric> _iterator;
 
@@ -2267,11 +2364,13 @@ class RawRecordingCanvas extends engine.BitmapCanvas
   @override
   engine.RecordingCanvas beginRecording(Rect bounds) =>
       throw UnsupportedError('');
+
   @override
   Picture endRecording() => throw UnsupportedError('');
 
   engine.RecordingCanvas _canvas;
   bool _isRecording = true;
+
   bool get isRecording => true;
   Rect cullRect;
 }

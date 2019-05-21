@@ -184,7 +184,7 @@ class BitmapCanvas extends EngineCanvas with SaveStackTracking {
         bounds.top - paddingPixels - canvasPositionY.toDouble();
 
     rootElement.style.transform =
-        'translate(${canvasPositionX}px, ${canvasPositionY}px)';
+    'translate(${canvasPositionX}px, ${canvasPositionY}px)';
 
     // This compensates for the translate on the `rootElement`.
     translate(
@@ -358,20 +358,20 @@ class BitmapCanvas extends EngineCanvas with SaveStackTracking {
     //
     // This matrix is sufficient to represent 2D rotates, translates, scales,
     // and skews.
-    assert(() {
-      if (matrix4[2] != 0.0 ||
-          matrix4[3] != 0.0 ||
-          matrix4[7] != 0.0 ||
-          matrix4[8] != 0.0 ||
-          matrix4[9] != 0.0 ||
-          matrix4[10] != 1.0 ||
-          matrix4[11] != 0.0 ||
-          matrix4[14] != 0.0 ||
-          matrix4[15] != 1.0) {
-        print('WARNING: 3D transformation matrix was passed to BitmapCanvas.');
-      }
-      return true;
-    }());
+//    assert(() {
+//      if (matrix4[2] != 0.0 ||
+//          matrix4[3] != 0.0 ||
+//          matrix4[7] != 0.0 ||
+//          matrix4[8] != 0.0 ||
+//          matrix4[9] != 0.0 ||
+//          matrix4[10] != 1.0 ||
+//          matrix4[11] != 0.0 ||
+//          matrix4[14] != 0.0 ||
+//          matrix4[15] != 1.0) {
+//        print('WARNING: 3D transformation matrix was passed to BitmapCanvas.');
+//      }
+//      return true;
+//    }());
     _ctx.transform(
       matrix4[0],
       matrix4[1],
@@ -393,7 +393,8 @@ class BitmapCanvas extends EngineCanvas with SaveStackTracking {
   @override
   void clipRRect(ui.RRect rrect) {
     super.clipRRect(rrect);
-    var path = new ui.Path()..addRRect(rrect);
+    var path = new ui.Path()
+      ..addRRect(rrect);
     _runPath(path);
     ctx.clip();
   }
@@ -649,8 +650,15 @@ class BitmapCanvas extends EngineCanvas with SaveStackTracking {
   void drawOval(ui.Rect rect, ui.PaintData paint) {
     _applyPaint(paint);
     ctx.beginPath();
-    ctx.ellipse(rect.center.dx, rect.center.dy, rect.width / 2, rect.height / 2,
-        0, 0, 2.0 * math.pi, false);
+    ctx.ellipse(
+        rect.center.dx,
+        rect.center.dy,
+        rect.width / 2,
+        rect.height / 2,
+        0,
+        0,
+        2.0 * math.pi,
+        false);
     _strokeOrFill(paint);
   }
 
@@ -658,7 +666,15 @@ class BitmapCanvas extends EngineCanvas with SaveStackTracking {
   void drawCircle(ui.Offset c, double radius, ui.PaintData paint) {
     _applyPaint(paint);
     ctx.beginPath();
-    ctx.ellipse(c.dx, c.dy, radius, radius, 0, 0, 2.0 * math.pi, false);
+    ctx.ellipse(
+        c.dx,
+        c.dy,
+        radius,
+        radius,
+        0,
+        0,
+        2.0 * math.pi,
+        false);
     _strokeOrFill(paint);
   }
 
@@ -736,10 +752,22 @@ class BitmapCanvas extends EngineCanvas with SaveStackTracking {
   }
 
   @override
-  void drawImageRect(
-      ui.Image image, ui.Rect src, ui.Rect dst, ui.PaintData paint) {
+  void drawImageRect(ui.Image image, ui.Rect src, ui.Rect dst,
+      ui.PaintData paint) {
     // TODO(het): Check if the src rect is the entire image, and if so just
     // append the imgElement and set it's height and width.
+
+    ctx.save();
+
+    // _applyPaint(paint);
+    ctx.globalCompositeOperation = _stringForBlendMode(paint.blendMode);
+
+//    print(_stringForBlendMode(paint.blendMode));
+    if (paint.color != null) {
+      var colorString = paint.color.toCssString();
+      _setFillAndStrokeStyle(colorString, colorString);
+    }
+
     ctx.drawImageScaledFromSource(
       (image as HtmlImage).imgElement,
       src.left,
@@ -751,6 +779,12 @@ class BitmapCanvas extends EngineCanvas with SaveStackTracking {
       dst.width,
       dst.height,
     );
+
+    // _strokeOrFill(paint, resetPaint: true);
+
+    _resetPaint();
+
+    ctx.restore();
   }
 
   @override
@@ -758,14 +792,16 @@ class BitmapCanvas extends EngineCanvas with SaveStackTracking {
     assert(paragraph.webOnlyIsLaidOut);
 
     final ParagraphGeometricStyle style =
-        paragraph.webOnlyGetParagraphGeometricStyle();
+    paragraph.webOnlyGetParagraphGeometricStyle();
 
     if (paragraph.webOnlyDrawOnCanvas) {
       if (style != _cachedLastStyle) {
         ctx.font = style.cssFontString;
         _cachedLastStyle = style;
       }
-      _applyPaint(paragraph.webOnlyGetPaint().webOnlyPaintData);
+      _applyPaint(paragraph
+          .webOnlyGetPaint()
+          .webOnlyPaintData);
       ctx.fillText(
           paragraph.webOnlyGetPlainText(),
           offset.dx + paragraph.webOnlyAlignOffset,
@@ -787,7 +823,7 @@ class BitmapCanvas extends EngineCanvas with SaveStackTracking {
     // _canvas = null;
 
     html.Element paragraphElement =
-        paragraph.webOnlyGetParagraphElement().clone(true);
+    paragraph.webOnlyGetParagraphElement().clone(true);
 
     final html.CssStyleDeclaration paragraphStyle = paragraphElement.style;
     paragraphStyle
@@ -815,14 +851,14 @@ class BitmapCanvas extends EngineCanvas with SaveStackTracking {
 
     if (isClipped) {
       List<html.Element> clipElements =
-          _clipContent(_clipStack, paragraphElement, offset, currentTransform);
+      _clipContent(_clipStack, paragraphElement, offset, currentTransform);
       for (html.Element clipElement in clipElements) {
         rootElement.append(clipElement);
         _children.add(clipElement);
       }
     } else {
       String cssTransform =
-          matrix4ToCssTransform(transformWithOffset(currentTransform, offset));
+      matrix4ToCssTransform(transformWithOffset(currentTransform, offset));
       paragraphStyle.transform = cssTransform;
       rootElement.append(paragraphElement);
     }
@@ -918,8 +954,9 @@ String _stringForBlendMode(ui.BlendMode blendMode) {
     case ui.BlendMode.multiply:
     // Falling back to multiply, ignoring alpha channel.
     // TODO(flutter_web): only used for debug, find better fallback for web.
-    case ui.BlendMode.modulate:
       return 'multiply';
+    case ui.BlendMode.modulate:
+      return 'source-over';
     case ui.BlendMode.screen:
       return 'screen';
     case ui.BlendMode.overlay:
@@ -992,8 +1029,8 @@ List<html.Element> _clipContent(List<_SaveClipEntry> clipStack,
   html.Element root, curElement;
   List<html.Element> clipDefs = [];
   for (int clipIndex = 0, len = clipStack.length;
-      clipIndex < len;
-      clipIndex++) {
+  clipIndex < len;
+  clipIndex++) {
     final _SaveClipEntry entry = clipStack[clipIndex];
     html.HtmlElement newElement = new html.DivElement();
     if (root == null) {
@@ -1034,7 +1071,7 @@ List<html.Element> _clipContent(List<_SaveClipEntry> clipStack,
       curElement.style.transform = matrix4ToCssTransform(newClipTransform);
       String svgClipPath = _pathToSvgClipPath(entry.path);
       html.Element clipElement =
-          html.Element.html(svgClipPath, treeSanitizer: _NullTreeSanitizer());
+      html.Element.html(svgClipPath, treeSanitizer: _NullTreeSanitizer());
       domRenderer.setElementStyle(
           curElement, 'clip-path', 'url(#svgClipText${_clipTextCounter})');
       domRenderer.setElementStyle(curElement, '-webkit-clip-path',
@@ -1048,7 +1085,8 @@ List<html.Element> _clipContent(List<_SaveClipEntry> clipStack,
     var reverseTransformDiv = new html.DivElement();
     reverseTransformDiv.style
       ..transform =
-          _cssTransformAtOffset(newClipTransform.clone()..invert(), 0, 0)
+      _cssTransformAtOffset(newClipTransform.clone()
+        ..invert(), 0, 0)
       ..transformOrigin = '0 0 0';
     curElement.append(reverseTransformDiv);
     curElement = reverseTransformDiv;
@@ -1061,8 +1099,8 @@ List<html.Element> _clipContent(List<_SaveClipEntry> clipStack,
   return <html.Element>[root]..addAll(clipDefs);
 }
 
-String _cssTransformAtOffset(
-    Matrix4 transform, double offsetX, double offsetY) {
+String _cssTransformAtOffset(Matrix4 transform, double offsetX,
+    double offsetY) {
   return matrix4ToCssTransform(
       transformWithOffset(transform, ui.Offset(offsetX, offsetY)));
 }
